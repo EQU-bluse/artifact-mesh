@@ -4,7 +4,7 @@ ArtifactMesh is a small software-artifact registry for development teams. It exp
 
 ## Run
 
-Requires Node.js 24 or newer.
+Requires Node.js 22 or newer.
 
 ```bash
 npm install
