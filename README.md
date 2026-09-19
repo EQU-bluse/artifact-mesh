@@ -26,3 +26,6 @@ npm run build
 - `GET /health`
 - `GET /api/v1/artifacts`
 - `POST /api/v1/artifacts`
+- `POST /api/v1/artifacts/:id/dependencies`
+- `GET /api/v1/artifacts/:id/dependencies`
+- `GET /api/v1/artifacts/:id/dependents`

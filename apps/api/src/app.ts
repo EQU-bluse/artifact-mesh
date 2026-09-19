@@ -1,7 +1,12 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { resolve } from 'node:path';
-import { createArtifactStore, type ArtifactStore, type NewArtifact } from './store.js';
+import {
+  createArtifactStore,
+  DependencyError,
+  type ArtifactStore,
+  type NewArtifact
+} from './store.js';
 
 const digestPattern = /^sha256:[a-f0-9]{64}$/u;
 
@@ -28,6 +33,39 @@ export async function buildApp(options: { database?: string; store?: ArtifactSto
       if (String(error).includes('UNIQUE constraint failed')) return reply.code(409).send({ error: 'artifact version or digest already exists' });
       throw error;
     }
+  });
+
+  app.post<{ Params: { id: string }; Body: unknown }>(
+    '/api/v1/artifacts/:id/dependencies',
+    async (request, reply) => {
+      const { id } = request.params;
+      const targetId = (request.body as { artifactId?: unknown } | null | undefined)?.artifactId;
+      if (typeof targetId !== 'string' || targetId.length === 0) {
+        return reply.code(400).send({ error: 'artifactId must be a non-empty string' });
+      }
+      try {
+        const dependency = store.addDependency(id, targetId);
+        return reply.code(201).send(dependency);
+      } catch (error) {
+        if (error instanceof DependencyError) {
+          const status = error.code === 'not_found' ? 404 : error.code === 'duplicate' ? 409 : 400;
+          return reply.code(status).send({ error: error.message });
+        }
+        throw error;
+      }
+    }
+  );
+
+  app.get<{ Params: { id: string } }>('/api/v1/artifacts/:id/dependencies', async (request, reply) => {
+    const { id } = request.params;
+    if (!store.exists(id)) return reply.code(404).send({ error: 'artifact does not exist' });
+    return { items: store.dependenciesOf(id) };
+  });
+
+  app.get<{ Params: { id: string } }>('/api/v1/artifacts/:id/dependents', async (request, reply) => {
+    const { id } = request.params;
+    if (!store.exists(id)) return reply.code(404).send({ error: 'artifact does not exist' });
+    return { items: store.dependentsOf(id) };
   });
 
   return app;
