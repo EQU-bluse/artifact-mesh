@@ -26,3 +26,8 @@ npm run build
 - `GET /health`
 - `GET /api/v1/artifacts`
 - `POST /api/v1/artifacts`
+- `POST /api/v1/artifacts/:id/dependencies` — body `{ "artifactId": "<target>" }`, records that the path artifact depends on the target; `201` with `{ artifactId, dependsOnId, createdAt }`
+- `GET /api/v1/artifacts/:id/dependencies` — outgoing relations (`{ items: [...] }`, newest first)
+- `GET /api/v1/artifacts/:id/dependents` — incoming relations (`{ items: [...] }`, newest first)
+
+Dependency edges are persisted in SQLite. Unknown artifacts return `404`; a missing/non-string `artifactId`, self-dependency, or any edge that would close a cycle returns `400`; a duplicate edge returns `409`.
